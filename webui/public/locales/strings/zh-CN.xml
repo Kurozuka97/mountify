@@ -4,7 +4,7 @@
     <string name="tab_ext4">Ext4</string>
     <string name="tab_advanced">高级</string>
     <string name="show_advanced_option">显示高级选项</string>
-    <string name="enable_mountify_update">启用 mountify 更新</string>
+    <string name="enable_mountify_update">启用 Mountify Next 更新</string>
     <string name="reboot_title">重启</string>
     <string name="reboot_message">立即重启？</string>
     <string name="reboot">重启</string>
@@ -18,12 +18,15 @@
     <string name="save">保存</string>
 
     <!-- Config descriptions -->
-    <string name="desc_mountify_mounts">模块挂载配置。\n0 - 禁用\n1 - 手动模式 (挂载 modules.txt 中发现的模块)\n2 - 自动模式 (挂载所有包含 system 文件夹的模块)</string>
+    <string name="desc_mountify_mounts">模块挂载配置。\n0 - 禁用 (释放 mountify 创建的所有 skip_mount 标记)\n1 - 手动模式 (挂载 modules.txt 中发现的模块，空列表不挂载任何内容)\n2 - 自动模式 (挂载所有包含 system 文件夹的模块)</string>
     <string name="desc_FAKE_MOUNT_NAME">挂载文件夹名称。</string>
     <string name="desc_test_decoy_mount">诱饵挂载测试。\n这是为 tmpfs 模式设计的。\n0 - 禁用\n1 - 启用</string>
+    <string name="desc_stealth_lowerdir">在存在空闲诱饵目录 (如 /oem) 时，将模块文件暂存到该目录，使 mountinfo 的 lowerdir 永不包含自定义文件夹名。\n找不到诱饵目录时回退到自定义文件夹。\n0 - 禁用\n1 - 启用 (默认)</string>
+    <string name="desc_compact_mounts">在安全的情况下 (暂存树中无分区目录、/system 下无已有挂载)，使用单个 overlay 挂载 /system，而不是每个子目录一个挂载。\n尽可能保持最低挂载数量。\n0 - 禁用\n1 - 启用 (默认)</string>
+    <string name="desc_mountify_verbose">将 mountify 诊断信息写入 kmsg。\n为避免在内核日志中留下痕迹，默认关闭。\n调试时请设为 1。\n0 - 禁用 (默认)\n1 - 启用</string>
     <string name="desc_mountify_stop_start">在服务处重启 Android，某些模块可能需要此操作。\n这是针对开机动画和 GPU 驱动等“竞争性”模块的变通方法。\n⚠️ 如果你没有遇到问题，则不需要此选项\n\n0 - 禁用\n1 - 启用</string>
     <string name="desc_FS_TYPE_ALIAS">如果你有注册了其他别名的自定义 overlayfs 驱动，请更改此项。</string>
-    <string name="desc_MOUNT_DEVICE_NAME">你可以在这里填入 'APatch', 'KSU', 'magisk' 以便 zygisk 卸载。\n\n示例: NeoZygisk, ReZygisk, Zygisk Assistant, ZygiskNext-UM/DE</string>
+    <string name="desc_MOUNT_DEVICE_NAME">auto (默认) 会解析为你的 root 管理器名称 (KSU / APatch / magisk)，以便 zygisk 卸载。\n要强制指定，请填入 'APatch'、'KSU'、'magisk' 或 'overlay'。\n\n示例: NeoZygisk, ReZygisk, Zygisk Assistant, ZygiskNext-UM/DE</string>
     <string name="desc_mountify_custom_umount">在此处启用内核内卸载方法。\n0 - 禁用\n1 - susfs4ksu\n2 - ksud 内核卸载 (22106+)\n\n⚠️ 如果你有使用 zygisk，则不需要此选项</string>
     <string name="desc_mountify_expert_mode">🚨 警告！\n ⚠️ 这将禁用安全检查。\n主要用于开发和调试目的。\n0 - 禁用\n1 - 启用</string>
     <string name="desc_use_ext4_sparse">ext4 稀疏模式覆盖。\n适用于偏好使用 ext4 稀疏镜像进行挂载的 tmpfs xattr 兼容设置。\n0 - 禁用\n1 - 启用</string>

@@ -4,7 +4,7 @@
     <string name="tab_ext4">Ext4</string>
     <string name="tab_advanced">Advanced</string>
     <string name="show_advanced_option">Show advanced option</string>
-    <string name="enable_mountify_update">Enable mountify update</string>
+    <string name="enable_mountify_update">Enable Mountify Next update</string>
     <string name="reboot_title">Reboot</string>
     <string name="reboot_message">Reboot now?</string>
     <string name="reboot">Reboot</string>
@@ -18,12 +18,15 @@
     <string name="save">Save</string>
 
     <!-- Config Descriptions -->
-    <string name="desc_mountify_mounts">Module mounting config.\n0 - disable\n1 - manual mode (mount modules that found on modules.txt)\n2 - auto mode (mount all modules with system folder)</string>
+    <string name="desc_mountify_mounts">Module mounting config.\n0 - disable (releases all skip_mount markers mountify created)\n1 - manual mode (mount modules found on modules.txt, empty list mounts nothing)\n2 - auto mode (mount all modules with system folder)</string>
     <string name="desc_FAKE_MOUNT_NAME">Mount folder name.</string>
     <string name="desc_test_decoy_mount">Test for decoy mounting.\nThis is meant for tmpfs mode.\n0 - disable\n1 - enable</string>
+    <string name="desc_stealth_lowerdir">Stage module files into a decoy directory (e.g. /oem) when an empty one is available, so mountinfo lowerdir never contains your fake folder name.\nFalls back to the fake folder when no decoy dir exists.\n0 - disable\n1 - enable (default)</string>
+    <string name="desc_compact_mounts">Mount /system with a single overlay instead of one mount per subdirectory when it is safe (no partition dirs staged, no existing mounts under /system).\nKeeps the mount count as low as possible.\n0 - disable\n1 - enable (default)</string>
+    <string name="desc_mountify_verbose">Write mountify diagnostics to kmsg.\nOff by default to avoid leaving traces in the kernel log.\nSet to 1 when debugging.\n0 - disable (default)\n1 - enable</string>
     <string name="desc_mountify_stop_start">Restarts android at service, certain modules might need this.\nThis is a workaround for 'racey' modules such as bootanimations and gpu drivers.\n⚠️ if you do NOT have a problem, you do NOT need this\n\n0 - disable\n1 - enable</string>
     <string name="desc_FS_TYPE_ALIAS">Change this if you have a customized overlayfs driver registered with another alias.</string>
-    <string name="desc_MOUNT_DEVICE_NAME">You can put 'APatch', 'KSU', 'magisk' here so a zygisk provider can umount.\n\nExamples: NeoZygisk, ReZygisk, Zygisk Assistant, ZygiskNext-UM/DE</string>
+    <string name="desc_MOUNT_DEVICE_NAME">auto (default) resolves to your manager's name (KSU / APatch / magisk) so a zygisk provider can umount.\nPut 'APatch', 'KSU', 'magisk' or 'overlay' here to force a value.\n\nExamples: NeoZygisk, ReZygisk, Zygisk Assistant, ZygiskNext-UM/DE</string>
     <string name="desc_mountify_custom_umount">Enable in-kernel umount methods here.\n0 - disable\n1 - susfs4ksu\n2 - ksud kernel umount (22106+)\n\n⚠️ if you have a zygisk provider, you do NOT need this</string>
     <string name="desc_mountify_expert_mode">🚨 WARNING!\n ⚠️ This disables safety checks.\nMostly for development and debugging purposes.\n0 - disable\n1 - enable</string>
     <string name="desc_use_ext4_sparse">ext4 sparse mode override.\nFor tmpfs xattr capable setups that prefers using an ext4 sparse image to mount.\n0 - disable\n1 - enable</string>

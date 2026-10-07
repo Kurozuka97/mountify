@@ -17,6 +17,28 @@ mountify_mounts=2
 # mount folder name
 FAKE_MOUNT_NAME="mountify"
 
+# Stealth options.
+# stealth_lowerdir stages module files into a decoy directory (e.g. /oem)
+# when an empty one is available, so mountinfo lowerdir never contains
+# the fake folder name. Falls back to the fake folder when no decoy exists.
+# 0 - disable
+# 1 - enable
+stealth_lowerdir=1
+
+# compact_mounts mounts /system with a single overlay instead of one mount
+# per subdirectory, when it is safe to do so (no partition dirs staged,
+# no existing mounts under /system). This keeps the mount count low.
+# 0 - disable
+# 1 - enable
+compact_mounts=1
+
+# kmsg logging.
+# mountify logs nothing to the kernel log by default to avoid leaving traces.
+# Set to 1 when debugging.
+# 0 - disable
+# 1 - enable
+mountify_verbose=0
+
 # Test for decoy mounting.
 # This is meant for tmpfs mode.
 # 0 to disable
@@ -37,10 +59,11 @@ mountify_stop_start=0
 FS_TYPE_ALIAS="overlay"
 
 # this one below is its device name
-# you can put "KSU", "APatch" here so a zygisk provider can umount
-# e.g. NeoZygisk, NoHello, ReZygisk, Shamiko, Zygisk Assistant, ZygiskNext-UM/DE
-# otherwise leave default. this is if you need unmount.
-MOUNT_DEVICE_NAME="overlay"
+# "auto" resolves to your root manager's name (KSU / APatch / magisk) so a
+# zygisk provider / in-kernel umount can unmount it.
+# you can also put "KSU", "APatch", "magisk" or "overlay" here to force a value.
+# this is if you need unmount.
+MOUNT_DEVICE_NAME="auto"
 
 # You can enable in-kernel umount methods here
 # 0 = disable

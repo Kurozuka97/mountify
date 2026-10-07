@@ -117,7 +117,7 @@ module_init(nuke_entry);
 module_exit(nuke_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("xx");
+MODULE_AUTHOR("xx, Kurozuka97");
 MODULE_DESCRIPTION("nuke ext4 sysfs");
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)

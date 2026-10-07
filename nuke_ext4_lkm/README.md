@@ -18,7 +18,7 @@ Compatibility:
 - Linux 4.4+.
 - CONFIG_KALLSYMS=y
 
-[Older version](https://github.com/backslashxx/mountify/tree/f0108a151e3be123e4aaf7319890db160692c309/nuke_ext4_lkm) 
+[Older version](https://github.com/Kurozuka97/mountify/tree/f0108a151e3be123e4aaf7319890db160692c309/nuke_ext4_lkm) 
 - uses kp.addr / kallsyms_lookup_name
 
 Credits: 

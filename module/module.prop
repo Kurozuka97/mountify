@@ -1,8 +1,8 @@
 id=mountify
-name=mountify
-version=v2.0.4
-versionCode=204
-author=xx, KOWX712
+name=Mountify Next
+version=v2.0.5
+versionCode=205
+author=xx, KOWX712, Kurozuka97
 metamodule=true
 description=Globally mounted modules via OverlayFS.
-updateJson=https://raw.githubusercontent.com/backslashxx/mountify/master/update.json
+updateJson=https://raw.githubusercontent.com/Kurozuka97/mountify/master/update.json

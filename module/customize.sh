@@ -32,6 +32,9 @@ fi
 [ -w "/mnt" ] && MNT_FOLDER="/mnt"
 # keep the (/mnt/vendor is mounted) check here! we dont want to write shit on it if its mounted!
 [ -w "/mnt/vendor" ] && ! busybox grep -q " /mnt/vendor " "/proc/mounts" && MNT_FOLDER="/mnt/vendor"
+if [ -z "$MNT_FOLDER" ] || [ ! -d "$MNT_FOLDER" ] || [ ! -w "$MNT_FOLDER" ]; then
+	abort "[!] no writable staging folder found!"
+fi
 
 test_ext4_image() {
 	# actually for 4.x kernels and up we don't even have to check this
@@ -91,7 +94,7 @@ else
 	echo "[!] CONFIG_TMPFS_XATTR fail!"
 	echo "[+] testing for ext4 sparse image fallback mode"
 	# check for tools
-	if [ -f "/system/bin/mkfs.ext4" ] && [ -f "/system/bin/resize2fs" ]; then		
+	if [ -f "/system/bin/mkfs.ext4" ]; then		
 		test_ext4_image
 		echo "$WARNING_STRING" > "$MODPATH/no_tmpfs_xattr"
 		echo "[+] ext4 sparse fallback mode enabled"
@@ -126,6 +129,18 @@ for file in $configs; do
 		cat "$MODPATH/$file" > "$PERSISTENT_DIR/$file"
 	fi
 done
+
+# merge missing config keys into existing configs
+# this way new options show up on the WebUI for updates too
+if [ -f "$PERSISTENT_DIR/config.sh" ]; then
+	for key in stealth_lowerdir compact_mounts mountify_verbose; do
+		if ! grep -q "^${key}=" "$PERSISTENT_DIR/config.sh"; then
+			echo "[+] config: adding missing $key"
+			echo "" >> "$PERSISTENT_DIR/config.sh"
+			grep "^${key}=" "$MODPATH/config.sh" >> "$PERSISTENT_DIR/config.sh"
+		fi
+	done
+fi
 
 # give exec to whiteout_gen.sh
 chmod +x "$MODPATH/whiteout_gen.sh"

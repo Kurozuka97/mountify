@@ -30,6 +30,19 @@
         ],
         "option": [0, 1, 2]
     },
+    "stealth_lowerdir": {
+        "type": "general",
+        "option": [0, 1]
+    },
+    "compact_mounts": {
+        "type": "general",
+        "option": [0, 1]
+    },
+    "mountify_verbose": {
+        "type": "general",
+        "advanced": true,
+        "option": [0, 1]
+    },
     "mountify_expert_mode": {
         "type": "general",
         "advanced": true,

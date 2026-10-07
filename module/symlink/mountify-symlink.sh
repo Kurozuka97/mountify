@@ -7,17 +7,46 @@
 PATH=/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:$PATH
 MODDIR="/data/adb/modules/mountify"
 
-# config
+# config defaults
 mountify_mounts=2
 mountify_expert_mode=0
 MOUNT_DEVICE_NAME="overlay"
 FS_TYPE_ALIAS="overlay"
 FAKE_MOUNT_NAME="mountify"
+mountify_verbose=0
 PERSISTENT_DIR="/data/adb/mountify"
 # read config
-. $PERSISTENT_DIR/config.sh
+# strip CR so configs edited with Windows line endings still work
+if [ -f "$PERSISTENT_DIR/config.sh" ]; then
+	_cfg_tmp="/dev/mountify_config.$$"
+	busybox tr -d '\r' < "$PERSISTENT_DIR/config.sh" > "$_cfg_tmp" 2>/dev/null
+	. "$_cfg_tmp" 2>/dev/null
+	rm -f "$_cfg_tmp"
+fi
+
+# resolve MOUNT_DEVICE_NAME
+if [ "$MOUNT_DEVICE_NAME" = "auto" ]; then
+	if [ "$KSU" = "true" ]; then
+		MOUNT_DEVICE_NAME="KSU"
+	elif [ "$APATCH" = "true" ]; then
+		MOUNT_DEVICE_NAME="APatch"
+	else
+		MOUNT_DEVICE_NAME="magisk"
+	fi
+fi
+
+# release skip_mount markers that mountify itself created
+release_skip_mounts() {
+	[ -f "$PERSISTENT_DIR/skipped_modules" ] || return 0
+	while IFS= read -r _mod; do
+		[ -n "$_mod" ] && rm -f "/data/adb/modules/$_mod/skip_mount"
+	done < "$PERSISTENT_DIR/skipped_modules"
+	rm -f "$PERSISTENT_DIR/skipped_modules"
+}
+
 # exit if disabled
-if [ $mountify_mounts = 0 ]; then
+if [ "$mountify_mounts" = 0 ]; then
+	release_skip_mounts
 	exit 0
 fi
 
@@ -43,8 +72,11 @@ fi
 [ -w "/mnt/vendor" ] && ! busybox grep -q " /mnt/vendor " "/proc/mounts" && MNT_FOLDER="/mnt/vendor"
 
 # create logging folder
-LOG_FOLDER="/dev/mountify_logs"
+LOG_FOLDER="$PERSISTENT_DIR/logs"
 mkdir -p "$LOG_FOLDER"
+chmod 700 "$LOG_FOLDER" 2>/dev/null
+# fresh logs on every run
+rm -f "$LOG_FOLDER/before" "$LOG_FOLDER/after" "$LOG_FOLDER/modules" "$LOG_FOLDER/mountify_mount_list"
 # log before 
 cat /proc/mounts > "$LOG_FOLDER/before"
 
@@ -79,6 +111,12 @@ if [ -f "$MODDIR/metamount.sh" ]; then
 	DMESG_PREFIX="mountify/metamount"
 fi
 
+# kmsg logging is gated behind mountify_verbose
+logmsg() {
+	[ "$mountify_verbose" = "1" ] || return 0
+	echo "$DMESG_PREFIX: $*" >> /dev/kmsg
+}
+
 # check if fake alias exists, if fail use overlay
 if ! grep "nodev" /proc/filesystems | grep -q "$FS_TYPE_ALIAS" > /dev/null 2>&1; then
 	FS_TYPE_ALIAS="overlay"
@@ -104,7 +142,7 @@ single_depth() {
 
 mountify_symlink() {
 if [ -z "$1" ] || [ -z "$2" ]; then
-	echo "$DMESG_PREFIX: missing arguments, fuck off" >> /dev/kmsg
+	logmsg "missing arguments, fuck off"
 	return
 fi
 
@@ -112,22 +150,22 @@ TARGET_DIR="/data/adb/modules/$1"
 
 if [ -f "$TARGET_DIR/disable" ] || [ -f "$TARGET_DIR/remove" ] || [ ! -d "$TARGET_DIR/system" ] ||
 	[ -f "$TARGET_DIR/skip_mountify" ] || [ -f "$TARGET_DIR/system/etc/hosts" ]; then
-	echo "$DMESG_PREFIX: $1 not meant to be mounted" >> /dev/kmsg
+	logmsg "$1 not meant to be mounted"
 	return	
 fi
 
 if [ -f "$TARGET_DIR/skip_mount" ] && [ -f "$MODDIR/metamount.sh" ]; then
-	echo "$DMESG_PREFIX: $1 has skip_mount" >> /dev/kmsg
+	logmsg "$1 has skip_mount"
 	return
 fi
 
-echo "$DMESG_PREFIX: processing $1" >> /dev/kmsg
+logmsg "processing $1"
 
 if [ ! -f "$MODDIR/metamount.sh" ] && [ ! -f "$TARGET_DIR/skip_mount" ]; then
 	touch "$TARGET_DIR/skip_mount"
 	# log modules that got skip_mounted
 	# we can likely clean those at uninstall
-	echo "$1" >> $MODDIR/skipped_modules
+	busybox grep -qx "$1" "$PERSISTENT_DIR/skipped_modules" 2>/dev/null || echo "$1" >> "$PERSISTENT_DIR/skipped_modules"
 fi
 
 MODULE_BASEDIR="$TARGET_DIR/system"
@@ -168,7 +206,7 @@ echo "$1" >> "$LOG_FOLDER/modules"
 
 # prevent this fuckup since on expert mode this isnt checked
 if [ "$FAKE_MOUNT_NAME" = "persist" ]; then
-	echo "$DMESG_PREFIX: folder name named $FAKE_MOUNT_NAME is not allowed!" >> /dev/kmsg
+	logmsg "folder name named $FAKE_MOUNT_NAME is not allowed!"
 	exit 1
 fi
 
@@ -177,7 +215,7 @@ if [ ! "$mountify_expert_mode" = 1 ] && [ -d "$MNT_FOLDER/$FAKE_MOUNT_NAME" ]; t
 	# anti fuckup
 	# this is important as someone might actually use legit folder names
 	# and same shit exists on MNT_FOLDER, prevent this issue.
-	echo "$DMESG_PREFIX: exiting since fake folder name $FAKE_MOUNT_NAME already exists!" >> /dev/kmsg
+	logmsg "exiting since fake folder name $FAKE_MOUNT_NAME already exists!"
 	exit 1
 fi
 
@@ -187,12 +225,15 @@ mkdir -p "$MNT_FOLDER/$FAKE_MOUNT_NAME"
 mount -t tmpfs tmpfs "$MNT_FOLDER/$FAKE_MOUNT_NAME"
 
 count=0
-if [ $mountify_mounts = 1 ] && grep -qv "#" "$PERSISTENT_DIR/modules.txt" >/dev/null 2>&1 ; then
-	for line in $( sed '/#/d' "$PERSISTENT_DIR/modules.txt" ); do
-		module_id=$( echo $line | awk {'print $1'} )
-		mountify_symlink "$module_id" "0000$count"
-		count=$(( count + 1 ))
-	done
+if [ "$mountify_mounts" = 1 ]; then
+	if [ -f "$PERSISTENT_DIR/modules.txt" ]; then
+		for line in $( sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$PERSISTENT_DIR/modules.txt" ); do
+			module_id=$( printf '%s' "$line" | awk '{print $1}' )
+			[ -z "$module_id" ] && continue
+			mountify_symlink "$module_id" "0000$count"
+			count=$(( count + 1 ))
+		done
+	fi
 else
 	# auto mode
 	for module in /data/adb/modules/*/system; do 
@@ -208,6 +249,6 @@ umount -l "$MNT_FOLDER/$FAKE_MOUNT_NAME"
 # log after
 cat /proc/mounts > "$LOG_FOLDER/after"
 touch "$LOG_FOLDER/mountify_symlink"
-echo "$DMESG_PREFIX: finished!" >> /dev/kmsg
+logmsg "finished!"
 
 # EOF

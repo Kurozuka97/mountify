@@ -1,0 +1,52 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Run shellcheck
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y shellcheck
+        # errors only, these scripts target busybox ash on purpose
+        shellcheck -S error \
+          -e SC1090,SC1091 \
+          module/*.sh module/symlink/*.sh module/whiteout/*.sh
+
+  meta:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+
+    - name: Check version sync
+      run: |
+        set -e
+        jq -e . update.json > /dev/null
+        U_VERSION=$(jq -r .version update.json)
+        U_CODE=$(jq -r .versionCode update.json)
+        M_VERSION=$(grep '^version=' module/module.prop | cut -d= -f2)
+        M_CODE=$(grep '^versionCode=' module/module.prop | cut -d= -f2)
+        echo "update.json: $U_VERSION/$U_CODE module.prop: $M_VERSION/$M_CODE"
+        [ "$U_VERSION" = "$M_VERSION" ]
+        [ "$U_CODE" = "$M_CODE" ]
+        grep -q "^# $M_CODE\$" CHANGELOG.md
+
+    - name: Check config key sync
+      run: |
+        set -e
+        for key in $(grep -oE '^[a-zA-Z_][a-zA-Z0-9_]*=' module/config.sh | cut -d= -f1); do
+          # every config key must be known by the WebUI metadata
+          grep -q "\"$key\"" webui/public/config_mountify.json \
+            || { echo "missing metadata for config key: $key"; exit 1; }
+        done

@@ -7,7 +7,16 @@
 PATH=/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:$PATH
 MODDIR="/data/adb/modules/mountify"
 PERSISTENT_DIR="/data/adb/mountify"
-. $PERSISTENT_DIR/config.sh
+# config defaults
+FS_TYPE_ALIAS="overlay"
+# read config
+# strip CR so configs edited with Windows line endings still work
+if [ -f "$PERSISTENT_DIR/config.sh" ]; then
+	_cfg_tmp="/dev/mountify_config.$$"
+	busybox tr -d '\r' < "$PERSISTENT_DIR/config.sh" > "$_cfg_tmp" 2>/dev/null
+	. "$_cfg_tmp" 2>/dev/null
+	rm -f "$_cfg_tmp"
+fi
 
 echo "[+] mountify"
 echo "[+] extended status"

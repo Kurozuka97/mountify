@@ -290,7 +290,7 @@ async function showModuleSelector() {
     const moduleList = await exec(`
         dir=/data/adb/modules
         for module in $(ls $dir); do
-            if ls $dir/$module/system >/dev/null 2>&1 && ! ls $dir/$module/system/etc/hosts >/dev/null 2>&1; then
+            if ls $dir/$module/system >/dev/null 2>&1; then
                 echo $module
             fi
         done

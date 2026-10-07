@@ -17,14 +17,20 @@ export async function loadConfig() {
         const conf = (await response.text())
             .split('\n')
             .filter(line => line.trim() !== '' && !line.startsWith('#'))
-            .map(line => line.split('='))
+            .map(line => line.trim())
+            .map(line => {
+                const eq = line.indexOf('=');
+                if (eq === -1) return null;
+                return [line.slice(0, eq).trim(), line.slice(eq + 1).trim()];
+            })
+            .filter(Boolean)
             .reduce((acc, [key, value]) => {
                 if (key && value) {
-                    const val = value.trim();
-                    if (val.startsWith('"') && val.endsWith('"')) {
-                        acc[key.trim()] = val.substring(1, val.length - 1);
+                    if (value.startsWith('"') && value.endsWith('"')) {
+                        acc[key] = value.substring(1, value.length - 1);
                     } else {
-                        acc[key.trim()] = parseInt(val, 10);
+                        const num = parseInt(value, 10);
+                        acc[key] = Number.isNaN(num) ? value : num;
                     }
                 }
                 return acc;
@@ -36,7 +42,7 @@ export async function loadConfig() {
             if [ -f "/data/adb/mountify/config.sh" ]; then
                 CONFIG="/data/adb/mountify/config.sh"
             fi
-            ln -s "$CONFIG" "${moddir}/webroot/config.sh"
+            ln -sfn "$CONFIG" "${moddir}/webroot/config.sh"
         `).then((result) => {
             if (result.errno !== 0) {
                 toast("Failed to load config");
@@ -72,11 +78,23 @@ export async function writeConfig() {
     for (const key in config) {
         if (Object.prototype.hasOwnProperty.call(config, key) && Object.prototype.hasOwnProperty.call(oldConfig, key)) {
             if (config[key] !== oldConfig[key]) {
-                let value = config[key]
+                let value = config[key];
+                // never write NaN back into the config
+                if (typeof value === 'number' && !Number.isFinite(value)) {
+                    value = oldConfig[key];
+                }
                 let command;
                 if (typeof value === 'string') {
-                    value = value.replace(/"/g, '\"').replace(/\\/g, '');
-                    command = `sed -i 's|^${key}=.*|${key}="${value}"|'`;
+                    // strip characters that would break the sed replacement or shell quoting
+                    const sanitized = value.replace(/["'`$\n\r\\]/g, '');
+                    if (sanitized !== value) {
+                        toast(`Unsupported characters removed from ${key}`);
+                        value = sanitized;
+                        config[key] = sanitized;
+                    }
+                    // escape sed replacement metacharacters (& and the | delimiter)
+                    const sedSafe = value.replace(/[&|]/g, (m) => '\\' + m);
+                    command = `sed -i 's|^${key}=.*|${key}="${sedSafe}"|'`;
                 } else {
                     command = `sed -i 's|^${key}=.*|${key}=${value}|'`;
                 }

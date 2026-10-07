@@ -6,10 +6,25 @@
 # This is free software; you can redistribute it and/or modify it under the terms of The Unlicense.
 PATH=/data/adb/ap/bin:/data/adb/ksu/bin:/data/adb/magisk:$PATH
 MODDIR="/data/adb/modules/mountify"
+# config defaults
 mountify_stop_start=0
+mountify_custom_umount=0
+FS_TYPE_ALIAS="overlay"
+mountify_verbose=0
 # read config
+# strip CR so configs edited with Windows line endings still work
 PERSISTENT_DIR="/data/adb/mountify"
-. $PERSISTENT_DIR/config.sh
+if [ -f "$PERSISTENT_DIR/config.sh" ]; then
+	_cfg_tmp="/dev/mountify_config.$$"
+	busybox tr -d '\r' < "$PERSISTENT_DIR/config.sh" > "$_cfg_tmp" 2>/dev/null
+	. "$_cfg_tmp" 2>/dev/null
+	rm -f "$_cfg_tmp"
+fi
+
+# check if fake alias exists, if fail use overlay
+if ! grep "nodev" /proc/filesystems | grep -q "$FS_TYPE_ALIAS" > /dev/null 2>&1; then
+	FS_TYPE_ALIAS="overlay"
+fi
 
 # stop; start
 # restart android at service
@@ -26,7 +41,7 @@ if [ $mountify_stop_start = 1 ] || [ "$KSU_LATE_LOAD" = "1" ]; then
 fi
 
 # handle kernel umount
-LOG_FOLDER="/dev/mountify_logs"
+LOG_FOLDER="$PERSISTENT_DIR/logs"
 
 # requires susfs add_try_umount
 do_susfs_umount() {
@@ -60,7 +75,9 @@ fi
 
 # cleanup
 # prep logs for status
-busybox diff "$LOG_FOLDER/before" "$LOG_FOLDER/after" | grep " $FS_TYPE_ALIAS " > "$MODDIR/mount_diff"
+if [ -f "$LOG_FOLDER/before" ] && [ -f "$LOG_FOLDER/after" ]; then
+	busybox diff "$LOG_FOLDER/before" "$LOG_FOLDER/after" | grep " $FS_TYPE_ALIAS " > "$MODDIR/mount_diff"
+fi
 
 if [ ! "$APATCH" = true ] && [ ! "$KSU" = true ]; then
 	until [ "$(getprop sys.boot_completed)" = "1" ]; do
